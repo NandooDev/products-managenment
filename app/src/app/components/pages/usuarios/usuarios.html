@@ -1,0 +1,167 @@
+<main class="users-page">
+  <section class="users-shell" aria-labelledby="users-title">
+    <header class="users-header">
+      <div>
+        <span class="eyebrow">Controle de acessos</span>
+        <h1 id="users-title">Usuarios do sistema</h1>
+        <p>Consulte, edite e remova usuarios cadastrados no ambiente.</p>
+
+        <a class="button button-secondary header-link" routerLink="/home">Voltar aos produtos</a>
+      </div>
+
+      <div class="summary-list" aria-label="Resumo dos usuarios">
+        @for (item of resumoUsuarios(); track item.label) {
+          <article class="summary-item">
+            <strong>{{ item.valor }}</strong>
+            <span>{{ item.label }}</span>
+          </article>
+        }
+      </div>
+    </header>
+
+    <div class="users-list">
+      @for (usuario of usuarios(); track usuario.id) {
+        <article class="user-card">
+          <button class="user-summary" type="button" (click)="abrirDetalhes(usuario)">
+            <span class="user-avatar" aria-hidden="true">{{ getInitials(usuario.nome) }}</span>
+
+            <span class="user-content">
+              <span class="user-title">
+                <span>
+                  <strong>{{ usuario.nome }}</strong>
+                  <small>#{{ usuario.id }}</small>
+                </span>
+              </span>
+
+              <span class="user-email">{{ usuario.email }}</span>
+
+              <span class="user-meta">
+                <span>CPF: {{ usuario.cpf }}</span>
+                <span>Senha: {{ usuario.senha }}</span>
+              </span>
+            </span>
+          </button>
+
+          <div class="user-actions" aria-label="Acoes do usuario">
+            <button class="button" type="button" (click)="abrirEdicao(usuario)">Editar</button>
+            <button class="button button-danger" type="button" (click)="removerUsuario(usuario)">
+              Remover
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty-state">Nenhum usuario cadastrado.</p>
+      }
+    </div>
+  </section>
+
+  @if (usuarioSelecionado(); as usuario) {
+    <section class="modal-backdrop" aria-label="Detalhes do usuario" (click)="fecharDetalhes()">
+      <article
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-detail-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <div>
+            <span class="eyebrow">Detalhes</span>
+            <h2 id="user-detail-title">{{ usuario.nome }}</h2>
+          </div>
+
+          <button class="icon-button" type="button" aria-label="Fechar" (click)="fecharDetalhes()">
+            x
+          </button>
+        </header>
+
+        <dl class="details-grid">
+          <div>
+            <dt>ID</dt>
+            <dd>#{{ usuario.id }}</dd>
+          </div>
+          <div>
+            <dt>Nome</dt>
+            <dd>{{ usuario.nome }}</dd>
+          </div>
+          <div>
+            <dt>E-mail</dt>
+            <dd>{{ usuario.email }}</dd>
+          </div>
+          <div>
+            <dt>Senha</dt>
+            <dd>{{ usuario.senha }}</dd>
+          </div>
+          <div>
+            <dt>CPF</dt>
+            <dd>{{ usuario.cpf }}</dd>
+          </div>
+        </dl>
+
+        <div class="modal-actions">
+          <button class="button button-secondary" type="button" (click)="fecharDetalhes()">
+            Fechar
+          </button>
+          <button class="button" type="button" (click)="abrirEdicao(usuario)">Editar usuario</button>
+        </div>
+      </article>
+    </section>
+  }
+
+  @if (usuarioEmEdicao(); as usuario) {
+    <section class="modal-backdrop" aria-label="Editar usuario" (click)="fecharEdicao()">
+      <article
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-edit-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <div>
+            <span class="eyebrow">Edicao</span>
+            <h2 id="user-edit-title">Editar {{ usuario.nome }}</h2>
+            <p>Somente nome e e-mail podem ser alterados.</p>
+          </div>
+
+          <button class="icon-button" type="button" aria-label="Fechar" (click)="fecharEdicao()">
+            x
+          </button>
+        </header>
+
+        <form class="edit-form" [formGroup]="usuarioForm" (ngSubmit)="salvarEdicao()" novalidate>
+          <div class="form-grid">
+            @for (field of usuarioFields(); track field.name) {
+              <label class="form-field" [for]="'edit-' + field.name">
+                <span>{{ field.label }}</span>
+                <input
+                  [id]="'edit-' + field.name"
+                  [type]="field.type"
+                  [placeholder]="field.placeholder"
+                  [autocomplete]="field.autocomplete"
+                  [formControlName]="field.name"
+                  [class.is-invalid]="hasError(field.name)"
+                  [attr.aria-describedby]="hasError(field.name) ? 'edit-' + field.name + '-error' : null"
+                />
+
+                @if (hasError(field.name)) {
+                  <small [id]="'edit-' + field.name + '-error'">
+                    {{ getErrorMessage(field.name) }}
+                  </small>
+                }
+              </label>
+            }
+
+          </div>
+
+          <div class="modal-actions">
+            <button class="button button-secondary" type="button" (click)="fecharEdicao()">
+              Cancelar
+            </button>
+            <button class="button" type="submit">Salvar alteracoes</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  }
+</main>

@@ -193,11 +193,16 @@ h1 {
 
 .button {
   min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
   border: 0;
   border-radius: 8px;
   color: #ffffff;
   background: #0b7f68;
   font-weight: 800;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -213,6 +218,11 @@ h1 {
 .button-secondary:hover,
 .button-secondary:focus-visible {
   background: #742331;
+}
+
+.header-link {
+  width: fit-content;
+  margin-top: 8px;
 }
 
 .empty-state {

@@ -2,9 +2,11 @@
   <section class="products-shell" aria-labelledby="products-title">
     <header class="products-header">
       <div>
-        <span class="eyebrow">Loja de eletronicos</span>
+        <span class="eyebrow">Supermercado</span>
         <h1 id="products-title">Produtos cadastrados</h1>
-        <p>Lista inicial com produtos disponiveis para venda e gestao de promocoes.</p>
+        <p>Lista inicial com produtos de supermercado disponiveis para venda e gestao de promocoes.</p>
+
+        <a class="button header-link" routerLink="/usuarios">Gerenciar usuarios</a>
       </div>
 
       <div class="summary-list" aria-label="Resumo dos produtos">
@@ -59,7 +61,7 @@
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Ex: 1999.90"
+                  placeholder="Ex: 4.99"
                   [value]="valoresPromocao()[produto.id] ?? ''"
                   (input)="atualizarValorPromocao(produto.id, $event)"
                 />
