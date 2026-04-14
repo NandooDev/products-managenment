@@ -1,0 +1,79 @@
+<main class="home-page">
+  <section class="products-shell" aria-labelledby="products-title">
+    <header class="products-header">
+      <div>
+        <span class="eyebrow">Loja de eletronicos</span>
+        <h1 id="products-title">Produtos cadastrados</h1>
+        <p>Lista inicial com produtos disponiveis para venda e gestao de promocoes.</p>
+      </div>
+
+      <div class="summary-list" aria-label="Resumo dos produtos">
+        @for (item of resumoProdutos(); track item.label) {
+          <article class="summary-item">
+            <strong>{{ item.valor }}</strong>
+            <span>{{ item.label }}</span>
+          </article>
+        }
+      </div>
+    </header>
+
+    <div class="products-list">
+      @for (produto of produtos(); track produto.id) {
+        <article class="product-card">
+          <div class="product-main">
+            <div class="product-title">
+              <span class="product-type">{{ produto.tipo }}</span>
+              <h2>{{ produto.nome }}</h2>
+            </div>
+
+            <p>{{ produto.descricao }}</p>
+
+            <dl class="product-meta">
+              <div>
+                <dt>ID</dt>
+                <dd>#{{ produto.id }}</dd>
+              </div>
+              <div>
+                <dt>Validade</dt>
+                <dd>{{ produto.data_validade }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="product-price">
+            @if (produto.preco_promocao !== null) {
+              <span class="price-label">Preco promocional</span>
+              <strong>{{ formatarPreco(produto.preco_promocao) }}</strong>
+              <span class="old-price">{{ formatarPreco(produto.preco_atual) }}</span>
+              <button class="button button-secondary" type="button" (click)="removerPromocao(produto)">
+                Remover promocao
+              </button>
+            } @else {
+              <span class="price-label">Preco atual</span>
+              <strong>{{ formatarPreco(produto.preco_atual) }}</strong>
+
+              <label class="promotion-field" [for]="'promocao-' + produto.id">
+                <span>Novo preco promocional</span>
+                <input
+                  [id]="'promocao-' + produto.id"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ex: 1999.90"
+                  [value]="valoresPromocao()[produto.id] ?? ''"
+                  (input)="atualizarValorPromocao(produto.id, $event)"
+                />
+              </label>
+
+              <button class="button" type="button" (click)="adicionarPromocao(produto)">
+                Adicionar promocao
+              </button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <p class="empty-state">Nenhum produto cadastrado.</p>
+      }
+    </div>
+  </section>
+</main>
