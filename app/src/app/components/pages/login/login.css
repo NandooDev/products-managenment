@@ -1,0 +1,7 @@
+:host {
+  --auth-primary: #0b7f68;
+  --auth-primary-dark: #064d40;
+  --auth-accent: #f7c948;
+
+  display: block;
+}

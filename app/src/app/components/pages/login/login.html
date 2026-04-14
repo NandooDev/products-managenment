@@ -1,0 +1,59 @@
+<section class="auth-page">
+  <aside class="auth-visual" aria-label="Resumo do acesso">
+    <a class="auth-brand" routerLink="/login" aria-label="Products Management">
+      <img src="/favicon.ico" alt="Products Management" />
+      <span>Products Management</span>
+    </a>
+
+    <div class="auth-visual-content">
+      <p class="auth-eyebrow">Acesso seguro</p>
+      <h1>Entre para gerenciar seu catalogo.</h1>
+      <p>
+        Controle produtos, cadastros e movimentacoes com uma rotina simples para o dia a
+        dia.
+      </p>
+    </div>
+
+    <ul class="auth-list">
+      @for (highlight of highlights(); track highlight) {
+        <li>{{ highlight }}</li>
+      }
+    </ul>
+  </aside>
+
+  <main class="auth-panel" aria-labelledby="login-title">
+    <div class="auth-header">
+      <p class="auth-eyebrow">Bem-vindo de volta</p>
+      <h2 id="login-title">Login</h2>
+      <p>Use seu e-mail e senha cadastrados para entrar.</p>
+    </div>
+
+    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+      @for (field of loginFields(); track field.name) {
+        <label class="auth-field" [for]="field.name">
+          <span>{{ field.label }}</span>
+          <input
+            [id]="field.name"
+            [type]="field.type"
+            [placeholder]="field.placeholder"
+            [autocomplete]="field.autocomplete"
+            [formControlName]="field.name"
+            [class.is-invalid]="hasError(field.name)"
+            [attr.aria-describedby]="hasError(field.name) ? field.name + '-error' : null"
+          />
+
+          @if (hasError(field.name)) {
+            <small [id]="field.name + '-error'">{{ getErrorMessage(field.name) }}</small>
+          }
+        </label>
+      }
+
+      <button class="auth-button" type="submit">Entrar</button>
+    </form>
+
+    <p class="auth-switch">
+      Ainda nao tem conta?
+      <a routerLink="/cadastro">Criar cadastro</a>
+    </p>
+  </main>
+</section>
