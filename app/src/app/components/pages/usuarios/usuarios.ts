@@ -1,16 +1,16 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-type UsuarioControlName = 'nome' | 'email' | 'senha' | 'cpf';
+import { getApiErrorMessage } from '../../../services/api-error';
+import {
+  CreateUsuarioPayload,
+  UpdateUsuarioPayload,
+  Usuario,
+  UsuarioService,
+} from '../../../services/usuario.service';
 
-interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  senha: string;
-  cpf: string;
-}
+type UsuarioControlName = 'nome' | 'email' | 'senha' | 'cpf';
 
 interface UsuarioField {
   name: UsuarioControlName;
@@ -26,56 +26,16 @@ interface UsuarioField {
   templateUrl: './usuarios.html',
   styleUrl: './usuarios.css',
 })
-export class Usuarios {
-  protected readonly usuarios = signal<Usuario[]>([
-    {
-      id: 1,
-      nome: 'Marina Costa',
-      email: 'marina.costa@empresa.com',
-      senha: 'Marina@123',
-      cpf: '123.456.789-10',
-    },
-    {
-      id: 2,
-      nome: 'Rafael Almeida',
-      email: 'rafael.almeida@empresa.com',
-      senha: 'Rafael@123',
-      cpf: '234.567.891-01',
-    },
-    {
-      id: 3,
-      nome: 'Bianca Rocha',
-      email: 'bianca.rocha@empresa.com',
-      senha: 'Bianca@123',
-      cpf: '345.678.912-02',
-    },
-    {
-      id: 4,
-      nome: 'Lucas Pereira',
-      email: 'lucas.pereira@empresa.com',
-      senha: 'Lucas@123',
-      cpf: '456.789.123-03',
-    },
-    {
-      id: 5,
-      nome: 'Camila Santos',
-      email: 'camila.santos@empresa.com',
-      senha: 'Camila@123',
-      cpf: '567.891.234-04',
-    },
-    {
-      id: 6,
-      nome: 'Thiago Nunes',
-      email: 'thiago.nunes@empresa.com',
-      senha: 'Thiago@123',
-      cpf: '678.912.345-05',
-    },
-  ]);
+export class Usuarios implements OnInit {
+  private readonly usuarioService = inject(UsuarioService);
 
+  protected readonly usuarios = signal<Usuario[]>([]);
   protected readonly usuarioSelecionado = signal<Usuario | null>(null);
   protected readonly usuarioEmEdicao = signal<Usuario | null>(null);
   protected readonly usuarioFormAberto = signal(false);
   protected readonly submitted = signal(false);
+  protected readonly carregandoUsuarios = signal(false);
+  protected readonly erroUsuarios = signal<string | null>(null);
 
   protected readonly usuarioFields = signal<readonly UsuarioField[]>([
     {
@@ -138,9 +98,16 @@ export class Usuarios {
     }),
     cpf: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(11)],
+      validators: [
+        Validators.required,
+        Validators.pattern(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/),
+      ],
     }),
   });
+
+  ngOnInit(): void {
+    this.carregarUsuarios();
+  }
 
   protected abrirDetalhes(usuario: Usuario): void {
     this.usuarioSelecionado.set(usuario);
@@ -155,6 +122,7 @@ export class Usuarios {
     this.usuarioEmEdicao.set(null);
     this.usuarioFormAberto.set(true);
     this.submitted.set(false);
+    this.configurarValidadorSenha(true);
     this.usuarioForm.reset({
       nome: '',
       email: '',
@@ -168,10 +136,11 @@ export class Usuarios {
     this.usuarioEmEdicao.set(usuario);
     this.usuarioFormAberto.set(true);
     this.submitted.set(false);
+    this.configurarValidadorSenha(false);
     this.usuarioForm.reset({
       nome: usuario.nome,
       email: usuario.email,
-      senha: usuario.senha,
+      senha: '',
       cpf: usuario.cpf,
     });
   }
@@ -192,36 +161,39 @@ export class Usuarios {
     }
 
     const usuarioAtual = this.usuarioEmEdicao();
-    const { nome, email, senha, cpf } = this.usuarioForm.getRawValue();
 
     if (usuarioAtual) {
-      const usuarioAtualizado: Usuario = {
-        ...usuarioAtual,
-        nome: nome.trim(),
-        email: email.trim(),
-        senha: senha.trim(),
-        cpf: cpf.trim(),
-      };
+      const usuarioPayload = this.criarUsuarioUpdatePayload();
 
-      this.usuarios.update((usuarios) =>
-        usuarios.map((usuario) => (usuario.id === usuarioAtual.id ? usuarioAtualizado : usuario)),
-      );
-      this.fecharEdicao();
-      alert(`Usuario ${usuarioAtualizado.nome} atualizado.`);
+      this.usuarioService.atualizar(usuarioAtual.id, usuarioPayload).subscribe({
+        next: (usuarioAtualizado) => {
+          this.usuarios.update((usuarios) =>
+            usuarios.map((usuario) =>
+              usuario.id === usuarioAtual.id ? usuarioAtualizado : usuario,
+            ),
+          );
+          this.fecharEdicao();
+          alert(`Usuario ${usuarioAtualizado.nome} atualizado.`);
+        },
+        error: (error: unknown) => {
+          alert(getApiErrorMessage(error, 'Nao foi possivel atualizar o usuario.'));
+        },
+      });
       return;
     }
 
-    const novoUsuario: Usuario = {
-      id: this.getProximoUsuarioId(),
-      nome: nome.trim(),
-      email: email.trim(),
-      senha: senha.trim(),
-      cpf: cpf.trim(),
-    };
+    const usuarioPayload = this.criarUsuarioCreatePayload();
 
-    this.usuarios.update((usuarios) => [novoUsuario, ...usuarios]);
-    this.fecharEdicao();
-    alert(`Usuario ${novoUsuario.nome} adicionado.`);
+    this.usuarioService.criar(usuarioPayload).subscribe({
+      next: (novoUsuario) => {
+        this.usuarios.update((usuarios) => [novoUsuario, ...usuarios]);
+        this.fecharEdicao();
+        alert(`Usuario ${novoUsuario.nome} adicionado.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel cadastrar o usuario.'));
+      },
+    });
   }
 
   protected removerUsuario(usuario: Usuario): void {
@@ -231,17 +203,24 @@ export class Usuarios {
       return;
     }
 
-    this.usuarios.update((usuarios) => usuarios.filter((item) => item.id !== usuario.id));
+    this.usuarioService.remover(usuario.id).subscribe({
+      next: () => {
+        this.usuarios.update((usuarios) => usuarios.filter((item) => item.id !== usuario.id));
 
-    if (this.usuarioSelecionado()?.id === usuario.id) {
-      this.fecharDetalhes();
-    }
+        if (this.usuarioSelecionado()?.id === usuario.id) {
+          this.fecharDetalhes();
+        }
 
-    if (this.usuarioEmEdicao()?.id === usuario.id) {
-      this.fecharEdicao();
-    }
+        if (this.usuarioEmEdicao()?.id === usuario.id) {
+          this.fecharEdicao();
+        }
 
-    alert(`Usuario ${usuario.nome} removido.`);
+        alert(`Usuario ${usuario.nome} removido.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel remover o usuario.'));
+      },
+    });
   }
 
   protected hasError(controlName: UsuarioControlName): boolean {
@@ -261,13 +240,13 @@ export class Usuarios {
       return 'Informe um e-mail valido.';
     }
 
+    if (control.hasError('pattern') && controlName === 'cpf') {
+      return 'Informe 11 digitos para o CPF.';
+    }
+
     if (control.hasError('minlength')) {
       if (controlName === 'senha') {
         return 'A senha precisa ter no minimo 6 caracteres.';
-      }
-
-      if (controlName === 'cpf') {
-        return 'Informe pelo menos 11 caracteres.';
       }
 
       return 'Informe pelo menos 3 caracteres.';
@@ -285,7 +264,57 @@ export class Usuarios {
       .join('');
   }
 
-  private getProximoUsuarioId(): number {
-    return this.usuarios().reduce((maiorId, usuario) => Math.max(maiorId, usuario.id), 0) + 1;
+  private carregarUsuarios(): void {
+    this.carregandoUsuarios.set(true);
+    this.erroUsuarios.set(null);
+
+    this.usuarioService.listar().subscribe({
+      next: (usuarios) => {
+        this.usuarios.set(usuarios);
+      },
+      error: (error: unknown) => {
+        this.erroUsuarios.set(getApiErrorMessage(error, 'Nao foi possivel carregar os usuarios.'));
+        this.carregandoUsuarios.set(false);
+      },
+      complete: () => {
+        this.carregandoUsuarios.set(false);
+      },
+    });
+  }
+
+  private configurarValidadorSenha(required: boolean): void {
+    const validators = required
+      ? [Validators.required, Validators.minLength(6)]
+      : [Validators.minLength(6)];
+
+    this.usuarioForm.controls.senha.setValidators(validators);
+    this.usuarioForm.controls.senha.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private criarUsuarioCreatePayload(): CreateUsuarioPayload {
+    const { nome, email, senha, cpf } = this.usuarioForm.getRawValue();
+
+    return {
+      nome: nome.trim(),
+      email: email.trim(),
+      senha: senha.trim(),
+      cpf: cpf.trim(),
+    };
+  }
+
+  private criarUsuarioUpdatePayload(): UpdateUsuarioPayload {
+    const { nome, email, senha, cpf } = this.usuarioForm.getRawValue();
+    const senhaLimpa = senha.trim();
+    const payload: UpdateUsuarioPayload = {
+      nome: nome.trim(),
+      email: email.trim(),
+      cpf: cpf.trim(),
+    };
+
+    if (senhaLimpa.length > 0) {
+      payload.senha = senhaLimpa;
+    }
+
+    return payload;
   }
 }

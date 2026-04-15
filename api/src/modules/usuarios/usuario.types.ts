@@ -11,3 +11,8 @@ export interface UpdateUsuarioInput {
   email?: string;
   senha?: string;
 }
+
+export interface LoginUsuarioInput {
+  email: string;
+  senha: string;
+}

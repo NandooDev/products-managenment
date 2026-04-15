@@ -24,6 +24,14 @@
       </div>
     </header>
 
+    @if (carregandoProdutos()) {
+      <p class="empty-state">Carregando produtos...</p>
+    }
+
+    @if (erroProdutos(); as erro) {
+      <p class="empty-state">{{ erro }}</p>
+    }
+
     <div class="products-list">
       @for (produto of produtos(); track produto.id) {
         <article class="product-card">

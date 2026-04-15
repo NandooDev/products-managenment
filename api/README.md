@@ -41,6 +41,7 @@ npm run dev
 - `GET /health`
 - `GET /usuarios`
 - `GET /usuarios/:id`
+- `POST /usuarios/login`
 - `POST /usuarios`
 - `PUT /usuarios/:id`
 - `DELETE /usuarios/:id`
@@ -58,6 +59,15 @@ npm run dev
 {
   "nome": "Maria Silva",
   "cpf": "12345678901",
+  "email": "maria@example.com",
+  "senha": "senha-segura"
+}
+```
+
+### Login
+
+```json
+{
   "email": "maria@example.com",
   "senha": "senha-segura"
 }

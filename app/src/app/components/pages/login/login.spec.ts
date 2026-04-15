@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
+import { UsuarioService } from '../../../services/usuario.service';
 import { Login } from './login';
 
 describe('Login', () => {
@@ -10,7 +12,22 @@ describe('Login', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Login],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        {
+          provide: UsuarioService,
+          useValue: {
+            login: vi.fn(() =>
+              of({
+                id: 1,
+                nome: 'Usuario Teste',
+                email: 'usuario@teste.com',
+                cpf: '12345678901',
+              }),
+            ),
+          },
+        },
+      ],
     })
     .compileComponents();
 

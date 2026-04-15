@@ -11,6 +11,7 @@ const usuarioController = new UsuarioController(usuarioService);
 
 export const usuarioRoutes = Router();
 
+usuarioRoutes.post("/login", asyncHandler(usuarioController.login));
 usuarioRoutes.get("/", asyncHandler(usuarioController.findAll));
 usuarioRoutes.get("/:id", asyncHandler(usuarioController.findById));
 usuarioRoutes.post("/", asyncHandler(usuarioController.create));

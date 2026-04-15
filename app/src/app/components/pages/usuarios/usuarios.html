@@ -24,6 +24,14 @@
       </div>
     </header>
 
+    @if (carregandoUsuarios()) {
+      <p class="empty-state">Carregando usuarios...</p>
+    }
+
+    @if (erroUsuarios(); as erro) {
+      <p class="empty-state">{{ erro }}</p>
+    }
+
     <div class="users-list">
       @for (usuario of usuarios(); track usuario.id) {
         <article class="user-card">
@@ -42,7 +50,7 @@
 
               <span class="user-meta">
                 <span>CPF: {{ usuario.cpf }}</span>
-                <span>Senha: {{ usuario.senha }}</span>
+                <span>Senha protegida</span>
               </span>
             </span>
           </button>
@@ -95,7 +103,7 @@
           </div>
           <div>
             <dt>Senha</dt>
-            <dd>{{ usuario.senha }}</dd>
+            <dd>Protegida</dd>
           </div>
           <div>
             <dt>CPF</dt>
@@ -132,7 +140,11 @@
                 Adicionar usuario
               }
             </h2>
-            <p>Informe nome, e-mail, CPF e senha do usuario.</p>
+            @if (usuarioEmEdicao()) {
+              <p>Informe os dados do usuario. Preencha a senha apenas se quiser troca-la.</p>
+            } @else {
+              <p>Informe nome, e-mail, CPF e senha do usuario.</p>
+            }
           </div>
 
           <button class="icon-button" type="button" aria-label="Fechar" (click)="fecharEdicao()">
@@ -159,6 +171,8 @@
                   <small [id]="'edit-' + field.name + '-error'">
                     {{ getErrorMessage(field.name) }}
                   </small>
+                } @else if (field.name === 'senha' && usuarioEmEdicao()) {
+                  <small>Deixe em branco para manter a senha atual.</small>
                 }
               </label>
             }

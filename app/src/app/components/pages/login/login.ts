@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+
+import { getApiErrorMessage } from '../../../services/api-error';
+import { UsuarioService } from '../../../services/usuario.service';
 
 type LoginControlName = 'email' | 'password';
 
@@ -19,6 +22,9 @@ interface LoginField {
   styleUrl: './login.css',
 })
 export class Login {
+  private readonly router = inject(Router);
+  private readonly usuarioService = inject(UsuarioService);
+
   protected readonly submitted = signal(false);
 
   protected readonly loginFields = signal<readonly LoginField[]>([
@@ -63,8 +69,17 @@ export class Login {
       return;
     }
 
-    const { email } = this.loginForm.getRawValue();
-    alert(`Login enviado para ${email}.`);
+    const { email, password } = this.loginForm.getRawValue();
+
+    this.usuarioService.login({ email, senha: password }).subscribe({
+      next: (usuario) => {
+        alert(`Bem-vindo, ${usuario.nome}.`);
+        void this.router.navigate(['/home']);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel fazer login.'));
+      },
+    });
   }
 
   protected hasError(controlName: LoginControlName): boolean {
@@ -90,5 +105,4 @@ export class Login {
 
     return '';
   }
-
 }

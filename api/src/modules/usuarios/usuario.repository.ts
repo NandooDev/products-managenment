@@ -15,6 +15,12 @@ export class UsuarioRepository {
     });
   }
 
+  async findByEmail(email: string): Promise<Usuario | null> {
+    return prisma.usuario.findUnique({
+      where: { email }
+    });
+  }
+
   async create(data: Prisma.UsuarioCreateInput): Promise<Usuario> {
     return prisma.usuario.create({ data });
   }

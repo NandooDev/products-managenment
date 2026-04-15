@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -9,6 +9,9 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { getApiErrorMessage } from '../../../services/api-error';
+import { Produto, ProdutoPayload, ProdutoService } from '../../../services/produto.service';
+
 type ProdutoControlName =
   | 'nome'
   | 'preco_atual'
@@ -16,16 +19,6 @@ type ProdutoControlName =
   | 'tipo'
   | 'descricao'
   | 'data_validade';
-
-interface Produto {
-  id: number;
-  nome: string;
-  preco_atual: number;
-  preco_promocao: number | null;
-  tipo: string;
-  descricao: string;
-  data_validade: string;
-}
 
 interface ProdutoField {
   name: ProdutoControlName;
@@ -62,122 +55,16 @@ function promocaoMenorQuePreco(control: AbstractControl): ValidationErrors | nul
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home {
-  protected readonly produtos = signal<Produto[]>([
-    {
-      id: 1,
-      nome: 'Arroz Branco Tipo 1 5kg',
-      preco_atual: 24.9,
-      preco_promocao: null,
-      tipo: 'Mercearia',
-      descricao: 'Pacote de arroz branco tipo 1 para o preparo das refeicoes do dia a dia.',
-      data_validade: '2026-09-30',
-    },
-    {
-      id: 2,
-      nome: 'Feijao Carioca 1kg',
-      preco_atual: 8.99,
-      preco_promocao: null,
-      tipo: 'Mercearia',
-      descricao: 'Feijao carioca selecionado, indicado para consumo domestico e reposicao de estoque.',
-      data_validade: '2026-08-15',
-    },
-    {
-      id: 3,
-      nome: 'Acucar Refinado 1kg',
-      preco_atual: 4.79,
-      preco_promocao: null,
-      tipo: 'Mercearia',
-      descricao: 'Acucar refinado para uso em bebidas, receitas e confeitaria simples.',
-      data_validade: '2026-10-10',
-    },
-    {
-      id: 4,
-      nome: 'Leite Integral 1L',
-      preco_atual: 5.49,
-      preco_promocao: null,
-      tipo: 'Laticinios',
-      descricao: 'Leite integral UHT em embalagem longa vida para consumo diario.',
-      data_validade: '2026-05-20',
-    },
-    {
-      id: 5,
-      nome: 'Cafe Torrado e Moido 500g',
-      preco_atual: 18.9,
-      preco_promocao: null,
-      tipo: 'Bebidas',
-      descricao: 'Cafe torrado e moido tradicional para preparo coado ou em cafeteira.',
-      data_validade: '2026-07-01',
-    },
-    {
-      id: 6,
-      nome: 'Oleo de Soja 900ml',
-      preco_atual: 7.59,
-      preco_promocao: null,
-      tipo: 'Mercearia',
-      descricao: 'Oleo de soja para preparo de alimentos, refogados e frituras.',
-      data_validade: '2026-11-30',
-    },
-    {
-      id: 7,
-      nome: 'Macarrao Espaguete 500g',
-      preco_atual: 5.29,
-      preco_promocao: null,
-      tipo: 'Massas',
-      descricao: 'Macarrao espaguete de semola para refeicoes rapidas e acompanhamentos.',
-      data_validade: '2026-09-12',
-    },
-    {
-      id: 8,
-      nome: 'Sabao em Po 1,6kg',
-      preco_atual: 21.9,
-      preco_promocao: null,
-      tipo: 'Limpeza',
-      descricao: 'Sabao em po para lavagem de roupas brancas e coloridas.',
-      data_validade: '2027-01-28',
-    },
-    {
-      id: 9,
-      nome: 'Papel Higienico Folha Dupla 12 Rolos',
-      preco_atual: 19.99,
-      preco_promocao: null,
-      tipo: 'Higiene',
-      descricao: 'Pacote com 12 rolos de papel higienico folha dupla para uso familiar.',
-      data_validade: '2027-03-25',
-    },
-    {
-      id: 10,
-      nome: 'Peito de Frango Resfriado 1kg',
-      preco_atual: 17.99,
-      preco_promocao: null,
-      tipo: 'Acougue',
-      descricao: 'Peito de frango resfriado, embalado e pronto para preparo.',
-      data_validade: '2026-04-22',
-    },
-    {
-      id: 11,
-      nome: 'Banana Prata 1kg',
-      preco_atual: 6.99,
-      preco_promocao: null,
-      tipo: 'Hortifruti',
-      descricao: 'Banana prata fresca para consumo direto, vitaminas e sobremesas.',
-      data_validade: '2026-04-20',
-    },
-    {
-      id: 12,
-      nome: 'Tomate Italiano 1kg',
-      preco_atual: 9.49,
-      preco_promocao: null,
-      tipo: 'Hortifruti',
-      descricao: 'Tomate italiano selecionado para saladas, molhos e preparos caseiros.',
-      data_validade: '2026-04-19',
-    },
-  ]);
+export class Home implements OnInit {
+  private readonly produtoService = inject(ProdutoService);
 
+  protected readonly produtos = signal<Produto[]>([]);
   protected readonly valoresPromocao = signal<Partial<Record<number, string>>>({});
   protected readonly produtoFormAberto = signal(false);
   protected readonly produtoEmEdicao = signal<Produto | null>(null);
   protected readonly produtoSubmitted = signal(false);
+  protected readonly carregandoProdutos = signal(false);
+  protected readonly erroProdutos = signal<string | null>(null);
 
   protected readonly produtoFields = signal<readonly ProdutoField[]>([
     {
@@ -267,6 +154,10 @@ export class Home {
     { validators: promocaoMenorQuePreco },
   );
 
+  ngOnInit(): void {
+    this.carregarProdutos();
+  }
+
   protected abrirCadastroProduto(): void {
     this.produtoEmEdicao.set(null);
     this.produtoFormAberto.set(true);
@@ -311,23 +202,36 @@ export class Home {
     }
 
     const produtoAtual = this.produtoEmEdicao();
+    const produtoPayload = this.criarProdutoPayload();
 
     if (produtoAtual) {
-      const produtoAtualizado = this.criarProdutoDoFormulario(produtoAtual.id);
-
-      this.produtos.update((produtos) =>
-        produtos.map((produto) => (produto.id === produtoAtual.id ? produtoAtualizado : produto)),
-      );
-      this.fecharFormularioProduto();
-      alert(`Produto ${produtoAtualizado.nome} atualizado.`);
+      this.produtoService.atualizar(produtoAtual.id, produtoPayload).subscribe({
+        next: (produtoAtualizado) => {
+          this.produtos.update((produtos) =>
+            produtos.map((produto) =>
+              produto.id === produtoAtual.id ? produtoAtualizado : produto,
+            ),
+          );
+          this.fecharFormularioProduto();
+          alert(`Produto ${produtoAtualizado.nome} atualizado.`);
+        },
+        error: (error: unknown) => {
+          alert(getApiErrorMessage(error, 'Nao foi possivel atualizar o produto.'));
+        },
+      });
       return;
     }
 
-    const novoProduto = this.criarProdutoDoFormulario(this.getProximoProdutoId());
-
-    this.produtos.update((produtos) => [novoProduto, ...produtos]);
-    this.fecharFormularioProduto();
-    alert(`Produto ${novoProduto.nome} adicionado.`);
+    this.produtoService.criar(produtoPayload).subscribe({
+      next: (novoProduto) => {
+        this.produtos.update((produtos) => [novoProduto, ...produtos]);
+        this.fecharFormularioProduto();
+        alert(`Produto ${novoProduto.nome} adicionado.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel cadastrar o produto.'));
+      },
+    });
   }
 
   protected removerProduto(produto: Produto): void {
@@ -337,20 +241,27 @@ export class Home {
       return;
     }
 
-    this.produtos.update((produtos) => produtos.filter((item) => item.id !== produto.id));
+    this.produtoService.remover(produto.id).subscribe({
+      next: () => {
+        this.produtos.update((produtos) => produtos.filter((item) => item.id !== produto.id));
 
-    this.valoresPromocao.update((valores) => {
-      const novosValores = { ...valores };
-      delete novosValores[produto.id];
+        this.valoresPromocao.update((valores) => {
+          const novosValores = { ...valores };
+          delete novosValores[produto.id];
 
-      return novosValores;
+          return novosValores;
+        });
+
+        if (this.produtoEmEdicao()?.id === produto.id) {
+          this.fecharFormularioProduto();
+        }
+
+        alert(`Produto ${produto.nome} removido.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel remover o produto.'));
+      },
     });
-
-    if (this.produtoEmEdicao()?.id === produto.id) {
-      this.fecharFormularioProduto();
-    }
-
-    alert(`Produto ${produto.nome} removido.`);
   }
 
   protected atualizarValorPromocao(produtoId: number, event: Event): void {
@@ -376,28 +287,40 @@ export class Home {
       return;
     }
 
-    this.produtos.update((produtos) =>
-      produtos.map((item) =>
-        item.id === produto.id ? { ...item, preco_promocao: precoPromocao } : item,
-      ),
-    );
+    this.produtoService.atualizar(produto.id, { preco_promocao: precoPromocao }).subscribe({
+      next: (produtoAtualizado) => {
+        this.produtos.update((produtos) =>
+          produtos.map((item) => (item.id === produto.id ? produtoAtualizado : item)),
+        );
 
-    this.valoresPromocao.update((valores) => {
-      const novosValores = { ...valores };
-      delete novosValores[produto.id];
+        this.valoresPromocao.update((valores) => {
+          const novosValores = { ...valores };
+          delete novosValores[produto.id];
 
-      return novosValores;
+          return novosValores;
+        });
+
+        alert(`Promocao adicionada para ${produto.nome}.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel adicionar a promocao.'));
+      },
     });
-
-    alert(`Promocao adicionada para ${produto.nome}.`);
   }
 
   protected removerPromocao(produto: Produto): void {
-    this.produtos.update((produtos) =>
-      produtos.map((item) => (item.id === produto.id ? { ...item, preco_promocao: null } : item)),
-    );
+    this.produtoService.atualizar(produto.id, { preco_promocao: null }).subscribe({
+      next: (produtoAtualizado) => {
+        this.produtos.update((produtos) =>
+          produtos.map((item) => (item.id === produto.id ? produtoAtualizado : item)),
+        );
 
-    alert(`Promocao removida de ${produto.nome}.`);
+        alert(`Promocao removida de ${produto.nome}.`);
+      },
+      error: (error: unknown) => {
+        alert(getApiErrorMessage(error, 'Nao foi possivel remover a promocao.'));
+      },
+    });
   }
 
   protected formatarPreco(valor: number): string {
@@ -445,7 +368,25 @@ export class Home {
     return '';
   }
 
-  private criarProdutoDoFormulario(id: number): Produto {
+  private carregarProdutos(): void {
+    this.carregandoProdutos.set(true);
+    this.erroProdutos.set(null);
+
+    this.produtoService.listar().subscribe({
+      next: (produtos) => {
+        this.produtos.set(produtos);
+      },
+      error: (error: unknown) => {
+        this.erroProdutos.set(getApiErrorMessage(error, 'Nao foi possivel carregar os produtos.'));
+        this.carregandoProdutos.set(false);
+      },
+      complete: () => {
+        this.carregandoProdutos.set(false);
+      },
+    });
+  }
+
+  private criarProdutoPayload(): ProdutoPayload {
     const { nome, preco_atual, preco_promocao, tipo, descricao, data_validade } =
       this.produtoForm.getRawValue();
     const precoPromocao =
@@ -456,7 +397,6 @@ export class Home {
         : Number(preco_promocao);
 
     return {
-      id,
       nome: nome.trim(),
       preco_atual: Number(preco_atual),
       preco_promocao: precoPromocao,
@@ -464,9 +404,5 @@ export class Home {
       descricao: descricao.trim(),
       data_validade,
     };
-  }
-
-  private getProximoProdutoId(): number {
-    return this.produtos().reduce((maiorId, produto) => Math.max(maiorId, produto.id), 0) + 1;
   }
 }

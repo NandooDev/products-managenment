@@ -3,7 +3,7 @@ import type { Usuario } from "@prisma/client";
 
 import { env } from "../../config/env";
 import { HttpError } from "../../utils/http-error";
-import type { CreateUsuarioInput, UpdateUsuarioInput } from "./usuario.types";
+import type { CreateUsuarioInput, LoginUsuarioInput, UpdateUsuarioInput } from "./usuario.types";
 import { UsuarioRepository } from "./usuario.repository";
 
 export type UsuarioResponse = Omit<Usuario, "senha">;
@@ -32,6 +32,22 @@ export class UsuarioService {
       ...input,
       senha
     });
+
+    return this.sanitize(usuario);
+  }
+
+  async login(input: LoginUsuarioInput): Promise<UsuarioResponse> {
+    const usuario = await this.usuarioRepository.findByEmail(input.email);
+
+    if (!usuario) {
+      throw new HttpError(401, "E-mail ou senha invalidos.");
+    }
+
+    const senhaValida = await bcrypt.compare(input.senha, usuario.senha);
+
+    if (!senhaValida) {
+      throw new HttpError(401, "E-mail ou senha invalidos.");
+    }
 
     return this.sanitize(usuario);
   }

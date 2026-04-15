@@ -24,10 +24,20 @@ export class UsuarioController {
       nome: readString(body, "nome", { required: true, max: 150 })!,
       cpf: this.readCpf(body, true)!,
       email: this.readEmail(body, true)!,
-      senha: readString(body, "senha", { required: true, min: 8 })!
+      senha: readString(body, "senha", { required: true, min: 6 })!
     });
 
     response.status(201).json(toJsonSafe(usuario));
+  };
+
+  login = async (request: Request, response: Response): Promise<void> => {
+    const body = getBody(request.body);
+    const usuario = await this.usuarioService.login({
+      email: this.readEmail(body, true)!,
+      senha: readString(body, "senha", { required: true, min: 6 })!
+    });
+
+    response.json(toJsonSafe(usuario));
   };
 
   update = async (request: Request, response: Response): Promise<void> => {
@@ -36,7 +46,7 @@ export class UsuarioController {
       nome: readString(body, "nome", { min: 1, max: 150 }),
       cpf: this.readCpf(body, false),
       email: this.readEmail(body, false),
-      senha: readString(body, "senha", { min: 8 })
+      senha: readString(body, "senha", { min: 6 })
     });
 
     response.json(toJsonSafe(usuario));

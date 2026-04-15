@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -7,9 +7,12 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
-type CadastroControlName = 'name' | 'email' | 'password' | 'confirmPassword';
+import { getApiErrorMessage } from '../../../services/api-error';
+import { UsuarioService } from '../../../services/usuario.service';
+
+type CadastroControlName = 'name' | 'email' | 'cpf' | 'password' | 'confirmPassword';
 
 interface CadastroField {
   name: CadastroControlName;
@@ -37,6 +40,9 @@ function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   styleUrl: './cadastro.css',
 })
 export class Cadastro {
+  private readonly router = inject(Router);
+  private readonly usuarioService = inject(UsuarioService);
+
   protected readonly submitted = signal(false);
 
   protected readonly cadastroFields = signal<readonly CadastroField[]>([
@@ -53,6 +59,13 @@ export class Cadastro {
       type: 'email',
       placeholder: 'seuemail@empresa.com',
       autocomplete: 'email',
+    },
+    {
+      name: 'cpf',
+      label: 'CPF',
+      type: 'text',
+      placeholder: '000.000.000-00',
+      autocomplete: 'off',
     },
     {
       name: 'password',
@@ -90,6 +103,13 @@ export class Cadastro {
         nonNullable: true,
         validators: [Validators.required, Validators.email],
       }),
+      cpf: new FormControl('', {
+        nonNullable: true,
+        validators: [
+          Validators.required,
+          Validators.pattern(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/),
+        ],
+      }),
       password: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required, Validators.minLength(6)],
@@ -111,8 +131,24 @@ export class Cadastro {
       return;
     }
 
-    const { name, email } = this.cadastroForm.getRawValue();
-    alert(`Cadastro enviado para ${name} (${email}).`);
+    const { name, email, cpf, password } = this.cadastroForm.getRawValue();
+
+    this.usuarioService
+      .criar({
+        nome: name.trim(),
+        email: email.trim(),
+        cpf: cpf.trim(),
+        senha: password.trim(),
+      })
+      .subscribe({
+        next: (usuario) => {
+          alert(`Cadastro criado para ${usuario.nome}.`);
+          void this.router.navigate(['/login']);
+        },
+        error: (error: unknown) => {
+          alert(getApiErrorMessage(error, 'Nao foi possivel criar o cadastro.'));
+        },
+      });
   }
 
   protected hasError(controlName: CadastroControlName): boolean {
@@ -134,6 +170,10 @@ export class Cadastro {
       return 'Informe um e-mail valido.';
     }
 
+    if (control.hasError('pattern') && controlName === 'cpf') {
+      return 'Informe 11 digitos para o CPF.';
+    }
+
     if (control.hasError('minlength')) {
       return controlName === 'name'
         ? 'Informe pelo menos 3 caracteres.'
@@ -146,5 +186,4 @@ export class Cadastro {
 
     return '';
   }
-
 }

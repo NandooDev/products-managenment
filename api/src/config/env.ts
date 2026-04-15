@@ -1,4 +1,7 @@
-import "dotenv/config";
+import { resolve } from "node:path";
+import { config } from "dotenv";
+
+config({ path: resolve(__dirname, "../../.env") });
 
 const parseNumber = (value: string | undefined, fallback: number): number => {
   if (!value) {
