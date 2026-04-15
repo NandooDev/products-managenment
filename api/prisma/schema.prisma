@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           BigInt    @id @default(autoincrement())
+  nome         String    @db.VarChar(150)
+  cpf          String    @unique @db.Char(11)
+  email        String    @unique @db.VarChar(150)
+  senha        String    @db.Text
+  criadoEm     DateTime? @default(now()) @map("criado_em") @db.Timestamp(6)
+  atualizadoEm DateTime? @default(now()) @updatedAt @map("atualizado_em") @db.Timestamp(6)
+
+  @@map("usuarios")
+}
+
+model Produto {
+  id            BigInt    @id @default(autoincrement())
+  nome          String    @db.VarChar(150)
+  precoAtual    Decimal   @map("preco_atual") @db.Decimal(10, 2)
+  precoPromocao Decimal?  @map("preco_promocao") @db.Decimal(10, 2)
+  tipo          String    @db.VarChar(50)
+  descricao     String    @db.VarChar(200)
+  dataValidade  DateTime  @map("data_validade") @db.Date
+  criadoEm      DateTime? @default(now()) @map("criado_em") @db.Timestamp(6)
+  atualizadoEm  DateTime? @default(now()) @updatedAt @map("atualizado_em") @db.Timestamp(6)
+
+  @@map("produtos")
+}
