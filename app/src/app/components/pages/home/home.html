@@ -4,9 +4,14 @@
       <div>
         <span class="eyebrow">Supermercado</span>
         <h1 id="products-title">Produtos cadastrados</h1>
-        <p>Lista inicial com produtos de supermercado disponiveis para venda e gestao de promocoes.</p>
+        <p>Cadastre, atualize e remova produtos do supermercado.</p>
 
-        <a class="button header-link" routerLink="/usuarios">Gerenciar usuarios</a>
+        <div class="header-actions">
+          <button class="button" type="button" (click)="abrirCadastroProduto()">
+            Adicionar produto
+          </button>
+          <a class="button button-muted header-link" routerLink="/usuarios">Gerenciar usuarios</a>
+        </div>
       </div>
 
       <div class="summary-list" aria-label="Resumo dos produtos">
@@ -71,6 +76,15 @@
                 Adicionar promocao
               </button>
             }
+
+            <div class="product-actions" aria-label="Acoes do produto">
+              <button class="button button-muted" type="button" (click)="abrirEdicaoProduto(produto)">
+                Atualizar produto
+              </button>
+              <button class="button button-danger" type="button" (click)="removerProduto(produto)">
+                Remover produto
+              </button>
+            </div>
           </div>
         </article>
       } @empty {
@@ -78,4 +92,81 @@
       }
     </div>
   </section>
+
+  @if (produtoFormAberto()) {
+    <section
+      class="modal-backdrop"
+      aria-label="Formulario de produto"
+      (click)="fecharFormularioProduto()"
+    >
+      <article
+        class="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-form-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-header">
+          <div>
+            <span class="eyebrow">{{ produtoEmEdicao() ? 'Edicao' : 'Cadastro' }}</span>
+            <h2 id="product-form-title">
+              @if (produtoEmEdicao(); as produto) {
+                Atualizar {{ produto.nome }}
+              } @else {
+                Adicionar produto
+              }
+            </h2>
+            <p>Informe os dados do produto.</p>
+          </div>
+
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Fechar"
+            (click)="fecharFormularioProduto()"
+          >
+            x
+          </button>
+        </header>
+
+        <form class="product-form" [formGroup]="produtoForm" (ngSubmit)="salvarProduto()" novalidate>
+          <div class="form-grid">
+            @for (field of produtoFields(); track field.name) {
+              <label class="form-field" [for]="'produto-' + field.name">
+                <span>{{ field.label }}</span>
+                <input
+                  [id]="'produto-' + field.name"
+                  [type]="field.type"
+                  [placeholder]="field.placeholder"
+                  [autocomplete]="field.autocomplete"
+                  [formControlName]="field.name"
+                  [class.is-invalid]="hasProdutoError(field.name)"
+                  [attr.min]="field.type === 'number' ? '0.01' : null"
+                  [attr.step]="field.type === 'number' ? '0.01' : null"
+                  [attr.aria-describedby]="
+                    hasProdutoError(field.name) ? 'produto-' + field.name + '-error' : null
+                  "
+                />
+
+                @if (hasProdutoError(field.name)) {
+                  <small [id]="'produto-' + field.name + '-error'">
+                    {{ getProdutoErrorMessage(field.name) }}
+                  </small>
+                }
+              </label>
+            }
+          </div>
+
+          <div class="modal-actions">
+            <button class="button button-muted" type="button" (click)="fecharFormularioProduto()">
+              Cancelar
+            </button>
+            <button class="button" type="submit">
+              {{ produtoEmEdicao() ? 'Salvar alteracoes' : 'Cadastrar produto' }}
+            </button>
+          </div>
+        </form>
+      </article>
+    </section>
+  }
 </main>

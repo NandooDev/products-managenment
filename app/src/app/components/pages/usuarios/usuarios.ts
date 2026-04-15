@@ -2,7 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-type UsuarioControlName = 'nome' | 'email';
+type UsuarioControlName = 'nome' | 'email' | 'senha' | 'cpf';
 
 interface Usuario {
   id: number;
@@ -15,7 +15,7 @@ interface Usuario {
 interface UsuarioField {
   name: UsuarioControlName;
   label: string;
-  type: 'text' | 'email';
+  type: 'text' | 'email' | 'password';
   placeholder: string;
   autocomplete: string;
 }
@@ -74,6 +74,7 @@ export class Usuarios {
 
   protected readonly usuarioSelecionado = signal<Usuario | null>(null);
   protected readonly usuarioEmEdicao = signal<Usuario | null>(null);
+  protected readonly usuarioFormAberto = signal(false);
   protected readonly submitted = signal(false);
 
   protected readonly usuarioFields = signal<readonly UsuarioField[]>([
@@ -90,6 +91,20 @@ export class Usuarios {
       type: 'email',
       placeholder: 'usuario@empresa.com',
       autocomplete: 'email',
+    },
+    {
+      name: 'cpf',
+      label: 'CPF',
+      type: 'text',
+      placeholder: '000.000.000-00',
+      autocomplete: 'off',
+    },
+    {
+      name: 'senha',
+      label: 'Senha',
+      type: 'password',
+      placeholder: 'Senha do usuario',
+      autocomplete: 'new-password',
     },
   ]);
 
@@ -117,6 +132,14 @@ export class Usuarios {
       nonNullable: true,
       validators: [Validators.required, Validators.email],
     }),
+    senha: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(6)],
+    }),
+    cpf: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(11)],
+    }),
   });
 
   protected abrirDetalhes(usuario: Usuario): void {
@@ -127,22 +150,39 @@ export class Usuarios {
     this.usuarioSelecionado.set(null);
   }
 
+  protected abrirCadastroUsuario(): void {
+    this.usuarioSelecionado.set(null);
+    this.usuarioEmEdicao.set(null);
+    this.usuarioFormAberto.set(true);
+    this.submitted.set(false);
+    this.usuarioForm.reset({
+      nome: '',
+      email: '',
+      senha: '',
+      cpf: '',
+    });
+  }
+
   protected abrirEdicao(usuario: Usuario): void {
     this.usuarioSelecionado.set(null);
     this.usuarioEmEdicao.set(usuario);
+    this.usuarioFormAberto.set(true);
     this.submitted.set(false);
     this.usuarioForm.reset({
       nome: usuario.nome,
       email: usuario.email,
+      senha: usuario.senha,
+      cpf: usuario.cpf,
     });
   }
 
   protected fecharEdicao(): void {
     this.usuarioEmEdicao.set(null);
+    this.usuarioFormAberto.set(false);
     this.submitted.set(false);
   }
 
-  protected salvarEdicao(): void {
+  protected salvarUsuario(): void {
     this.submitted.set(true);
 
     if (this.usuarioForm.invalid) {
@@ -152,25 +192,36 @@ export class Usuarios {
     }
 
     const usuarioAtual = this.usuarioEmEdicao();
+    const { nome, email, senha, cpf } = this.usuarioForm.getRawValue();
 
-    if (!usuarioAtual) {
+    if (usuarioAtual) {
+      const usuarioAtualizado: Usuario = {
+        ...usuarioAtual,
+        nome: nome.trim(),
+        email: email.trim(),
+        senha: senha.trim(),
+        cpf: cpf.trim(),
+      };
+
+      this.usuarios.update((usuarios) =>
+        usuarios.map((usuario) => (usuario.id === usuarioAtual.id ? usuarioAtualizado : usuario)),
+      );
+      this.fecharEdicao();
+      alert(`Usuario ${usuarioAtualizado.nome} atualizado.`);
       return;
     }
 
-    const { nome, email } = this.usuarioForm.getRawValue();
-    const usuarioAtualizado: Usuario = {
-      ...usuarioAtual,
-      nome,
-      email,
+    const novoUsuario: Usuario = {
+      id: this.getProximoUsuarioId(),
+      nome: nome.trim(),
+      email: email.trim(),
+      senha: senha.trim(),
+      cpf: cpf.trim(),
     };
 
-    this.usuarios.update((usuarios) =>
-      usuarios.map((usuario) => (usuario.id === usuarioAtual.id ? usuarioAtualizado : usuario)),
-    );
-    this.usuarioEmEdicao.set(null);
-    this.submitted.set(false);
-
-    alert(`Usuario ${usuarioAtualizado.nome} atualizado.`);
+    this.usuarios.update((usuarios) => [novoUsuario, ...usuarios]);
+    this.fecharEdicao();
+    alert(`Usuario ${novoUsuario.nome} adicionado.`);
   }
 
   protected removerUsuario(usuario: Usuario): void {
@@ -211,6 +262,14 @@ export class Usuarios {
     }
 
     if (control.hasError('minlength')) {
+      if (controlName === 'senha') {
+        return 'A senha precisa ter no minimo 6 caracteres.';
+      }
+
+      if (controlName === 'cpf') {
+        return 'Informe pelo menos 11 caracteres.';
+      }
+
       return 'Informe pelo menos 3 caracteres.';
     }
 
@@ -224,5 +283,9 @@ export class Usuarios {
       .slice(0, 2)
       .map((parte) => parte.charAt(0).toUpperCase())
       .join('');
+  }
+
+  private getProximoUsuarioId(): number {
+    return this.usuarios().reduce((maiorId, usuario) => Math.max(maiorId, usuario.id), 0) + 1;
   }
 }

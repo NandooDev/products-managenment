@@ -4,9 +4,14 @@
       <div>
         <span class="eyebrow">Controle de acessos</span>
         <h1 id="users-title">Usuarios do sistema</h1>
-        <p>Consulte, edite e remova usuarios cadastrados no ambiente.</p>
+        <p>Cadastre, atualize e remova usuarios cadastrados no ambiente.</p>
 
-        <a class="button button-secondary header-link" routerLink="/home">Voltar aos produtos</a>
+        <div class="header-actions">
+          <button class="button" type="button" (click)="abrirCadastroUsuario()">
+            Adicionar usuario
+          </button>
+          <a class="button button-secondary header-link" routerLink="/home">Voltar aos produtos</a>
+        </div>
       </div>
 
       <div class="summary-list" aria-label="Resumo dos usuarios">
@@ -108,8 +113,8 @@
     </section>
   }
 
-  @if (usuarioEmEdicao(); as usuario) {
-    <section class="modal-backdrop" aria-label="Editar usuario" (click)="fecharEdicao()">
+  @if (usuarioFormAberto()) {
+    <section class="modal-backdrop" aria-label="Formulario de usuario" (click)="fecharEdicao()">
       <article
         class="modal-card"
         role="dialog"
@@ -119,9 +124,15 @@
       >
         <header class="modal-header">
           <div>
-            <span class="eyebrow">Edicao</span>
-            <h2 id="user-edit-title">Editar {{ usuario.nome }}</h2>
-            <p>Somente nome e e-mail podem ser alterados.</p>
+            <span class="eyebrow">{{ usuarioEmEdicao() ? 'Edicao' : 'Cadastro' }}</span>
+            <h2 id="user-edit-title">
+              @if (usuarioEmEdicao(); as usuario) {
+                Editar {{ usuario.nome }}
+              } @else {
+                Adicionar usuario
+              }
+            </h2>
+            <p>Informe nome, e-mail, CPF e senha do usuario.</p>
           </div>
 
           <button class="icon-button" type="button" aria-label="Fechar" (click)="fecharEdicao()">
@@ -129,7 +140,7 @@
           </button>
         </header>
 
-        <form class="edit-form" [formGroup]="usuarioForm" (ngSubmit)="salvarEdicao()" novalidate>
+        <form class="edit-form" [formGroup]="usuarioForm" (ngSubmit)="salvarUsuario()" novalidate>
           <div class="form-grid">
             @for (field of usuarioFields(); track field.name) {
               <label class="form-field" [for]="'edit-' + field.name">
@@ -158,7 +169,9 @@
             <button class="button button-secondary" type="button" (click)="fecharEdicao()">
               Cancelar
             </button>
-            <button class="button" type="submit">Salvar alteracoes</button>
+            <button class="button" type="submit">
+              {{ usuarioEmEdicao() ? 'Salvar alteracoes' : 'Cadastrar usuario' }}
+            </button>
           </div>
         </form>
       </article>

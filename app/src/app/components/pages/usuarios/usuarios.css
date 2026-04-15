@@ -30,6 +30,14 @@
   max-width: 640px;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
 .eyebrow {
   color: #0b7f68;
   font-size: 0.86rem;
@@ -181,7 +189,10 @@ h1 {
 
 .header-link {
   width: fit-content;
-  margin-top: 8px;
+}
+
+.header-actions .header-link {
+  margin-top: 0;
 }
 
 .empty-state {

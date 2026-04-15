@@ -45,12 +45,22 @@ h1 {
 }
 
 .products-header p,
+.modal-header p,
 .product-card p,
 .price-label,
 .summary-item span,
-.promotion-field span {
+.promotion-field span,
+.form-field span {
   color: #626a72;
   line-height: 1.5;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .summary-list {
@@ -153,6 +163,12 @@ h1 {
   border-left: 1px solid #d9e2df;
 }
 
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .product-price strong {
   color: #0b7f68;
   font-size: 1.65rem;
@@ -220,9 +236,30 @@ h1 {
   background: #742331;
 }
 
+.button-muted {
+  background: #59636e;
+}
+
+.button-muted:hover,
+.button-muted:focus-visible {
+  background: #424b55;
+}
+
+.button-danger {
+  background: #a33444;
+}
+
+.button-danger:hover,
+.button-danger:focus-visible {
+  background: #742331;
+}
+
 .header-link {
   width: fit-content;
-  margin-top: 8px;
+}
+
+.header-actions .header-link {
+  margin-top: 0;
 }
 
 .empty-state {
@@ -269,7 +306,8 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .product-card {
+  .product-card,
+  .modal-card {
     padding: 18px;
   }
 }
